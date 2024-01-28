@@ -10,6 +10,7 @@ import matplotlib.patches as mpatches
 import pandas as pd
 import os
 import matplotlib.patches as patches
+import pybedtools
 
 ax,fig = None, None
 options = [
@@ -21,7 +22,7 @@ options = [
 ]
 chr = options[0]
 class BED:
-    def __init__(self, color, track_height):
+    def __init__(self, color, track_height, path = ""):
         #self.df = pd.DataFrame()
         self.file_name = ''
         self.color = ''
@@ -29,12 +30,16 @@ class BED:
         self.legend_patch = None
         self.color = color
         self.track_height = track_height
+        self.path = ""
+        if (path == ""):
+            self.path = askopenfilename(title="Choose bed")
+        else:
+            self.path = path
         self.read_bed()
 
     def read_bed(self):
-        path = askopenfilename(title="Choose bed")
-        self.df = pd.read_csv(path,sep="\t")
-        self.file_name = os.path.basename(path)
+        self.df = pd.read_csv(self.path,sep="\t")
+        self.file_name = os.path.basename(self.path)
         self.show_file_name()
         self.bed_to_graph()
 
@@ -55,15 +60,10 @@ class BED:
 class BED_heandler:
     beds = []
     colors = ['red','blue','green']
-    limit = 3
-    index = 0
-    def bed_loader(self,event):
-        self.beds.append(BED(self.colors[self.index],self.index))
+    def bed_loader(self,event,path=""):
+        self.beds.append(BED(self.colors[self.index],self.index,path))
         self.show_file_names()
-        self.index = self.index + 1
 
-        if(self.index>self.limit):
-            self.index = 0
     def plot(self):
         for bed in self.beds:
             bed.bed_to_graph()
@@ -73,6 +73,16 @@ class BED_heandler:
             legends.append(bed.legend_patch)
         ax.legend(handles=legends)
 
+    def intersection(self,event):
+        if(len(self.beds)<2):
+            print("not enough tracks")
+        elif(len(self.beds)>2):
+            print("already intersected")
+        a = pybedtools.BedTool(self.beds[0].path)
+        b = a.intersect(self.beds[1].path)
+        filename = f'{self.beds[0].file_name}_VS_{self.beds[1].file_name}_intersection.bed'
+        b.saveas(filename)
+        self.bed_loader(None,filename)
 
 root = Tk()
 root.geometry("750x750")
@@ -92,6 +102,10 @@ ax_upload = fig.add_axes([0.8, 0.05, 0.1, 0.075])
 b_upload = Button(ax_upload, 'upload')
 b_upload.on_clicked(B.bed_loader)
 
+ax_intersect = fig.add_axes([0.7, 0.05, 0.1, 0.075])
+b_intersect = Button(ax_intersect, 'intersect')
+b_intersect.on_clicked(B.intersection)
+
 canvas = FigureCanvasTkAgg(fig, master=root)  # A tk.DrawingArea.
 canvas.draw()
 
@@ -105,7 +119,6 @@ def update(*kwargs):
     chr = clicked.get()
     [p.remove() for p in reversed(ax.patches)]
     BED_heandler.plot(BED_heandler)
-
 
 # Dropdown menu options
 # datatype of menu text
