@@ -60,8 +60,10 @@ class BED:
 class BED_heandler:
     beds = []
     colors = ['red','blue','green']
+    index = 0
     def bed_loader(self,event,path=""):
         self.beds.append(BED(self.colors[self.index],self.index,path))
+        self.index = self.index +1
         self.show_file_names()
 
     def plot(self):

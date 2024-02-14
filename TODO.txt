@@ -1,0 +1,12 @@
+for macs2 use hela-s3-polar2a-hg38.bed and transform it to BAM
+then use macs2 to make a peak calling 
+then repeat this step using subprocess in python
+then connect it to the round2 program
+
+https://bedtools.readthedocs.io/en/latest/content/tools/bedtobam.html
+https://hbctraining.github.io/Intro-to-ChIPseq-flipped/lessons/06_peak_calling_macs.html
+
+
+run example of bedtools:
+
+bedtools intersect -a hg19_mir688.bed -b hg19_mir688.bed
