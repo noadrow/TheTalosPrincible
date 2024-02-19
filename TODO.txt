@@ -10,3 +10,13 @@ https://hbctraining.github.io/Intro-to-ChIPseq-flipped/lessons/06_peak_calling_m
 run example of bedtools:
 
 bedtools intersect -a hg19_mir688.bed -b hg19_mir688.bed
+
+
+
+TODO new:
+1. try to show in live the pygenometracks script 
+2. create a backend pipline for extracting genes from genome positions (or cpg ids)
+	a. link the script that extract bed from cpg 
+	b. bedintersect a gene bed data 
+	c. extract gene as list (sub process of cut)
+3. identify cpg sites with specific TF motif and intersect them with a chip-seq data

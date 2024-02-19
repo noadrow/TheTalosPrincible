@@ -59,7 +59,7 @@ class BED:
         self.legend_patch = mpatches.Patch(color=self.color, label=self.file_name)
 class BED_heandler:
     beds = []
-    colors = ['red','blue','green']
+    colors = ['red','orange','green','blue','purple','brown','black']
     index = 0
     def bed_loader(self,event,path=""):
         self.beds.append(BED(self.colors[self.index],self.index,path))
