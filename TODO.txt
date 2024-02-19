@@ -10,3 +10,5 @@ https://hbctraining.github.io/Intro-to-ChIPseq-flipped/lessons/06_peak_calling_m
 run example of bedtools:
 
 bedtools intersect -a hg19_mir688.bed -b hg19_mir688.bed
+
+
