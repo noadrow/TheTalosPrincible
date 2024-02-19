@@ -12,3 +12,13 @@ run example of bedtools:
 bedtools intersect -a hg19_mir688.bed -b hg19_mir688.bed
 
 
+
+todo (pending to be approval)
+- more readable data layout
+- peak calling, more specifically:
+     - reducing the currently long pipeline into a single button   <----    we would be stating here
+     - buttons and sliders for choosing criteria
+- showing intersections graphs
+- init project page in github and creating issues
+
+
