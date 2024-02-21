@@ -11,8 +11,7 @@ import matplotlib.patches as patches
 import pybedtools
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from PyQt5.QtCore import QTimer
-
-
+from PyQt5.QtWidgets import QMessageBox
 class BED:
     def __init__(self, color, track_height, path=""):
         self.file_name = ''
@@ -28,6 +27,8 @@ class BED:
         self.read_bed()
 
     def read_bed(self):
+        while(self.path==""):
+            self.path, _ = QFileDialog.getOpenFileName(None, "Choose bed", "", "Bed files (*.bed);;All Files (*)")
         self.df = pd.read_csv(self.path, sep="\t")
         self.file_name = os.path.basename(self.path)
         self.show_file_name()
@@ -158,6 +159,17 @@ class MainWindow(QMainWindow):
         self.canvas.ax.set_ylim(*ylim)
         self.canvas.draw()
 
+def showDialog():
+   msgBox = QMessageBox()
+   msgBox.setIcon(QMessageBox.Information)
+   msgBox.setText("Message box pop up window")
+   msgBox.setWindowTitle("QMessageBox Example")
+   msgBox.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
+   msgBox.buttonClicked.connect(msgButtonClick)
+
+   returnValue = msgBox.exec()
+   if returnValue == QMessageBox.Ok:
+      print('OK clicked')
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
