@@ -5,9 +5,9 @@ from matplotlib.figure import Figure
 import matplotlib.patches as patches
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.patches as patches  # todo duplicate? remove?
 import pandas as pd
 import os
-import matplotlib.patches as patches
 import pybedtools
 from matplotlib.backends.backend_qtagg import NavigationToolbar2QT as NavigationToolbar
 from PyQt5.QtCore import QTimer
@@ -16,6 +16,7 @@ from PyQt5.QtCore import QTimer
 class BED:
     def __init__(self, color, track_height, path=""):
         self.file_name = ''
+        self.df = ''  # todo remove?
         self.color = ''
         self.track_height = 0
         self.legend_patch = None
@@ -25,9 +26,11 @@ class BED:
             self.path, _ = QFileDialog.getOpenFileName(None, "Choose bed", "", "Bed files (*.bed);;All Files (*)")
         else:
             self.path = path
+
         self.read_bed()
 
-    def read_bed(self):
+    def read_bed(self) -> bool:
+
         self.df = pd.read_csv(self.path, sep="\t")
         self.file_name = os.path.basename(self.path)
         self.show_file_name()
@@ -60,9 +63,22 @@ class BEDHandler:
     index = 0
 
     def bed_loader(self, path=""):
-        self.beds.append(BED(self.colors[self.index], self.index, path))
-        self.index = self.index + 1
-        self.show_file_names()
+
+        try:
+            self.beds.append(BED(self.colors[self.index], self.index, path))
+            self.index = self.index + 1
+            self.show_file_names()
+            # return True
+
+        except FileNotFoundError as e:
+            print(f"Error: {e}")
+            print("File not found. Please provide a valid file path.")
+            # return False
+
+        except pd.errors.EmptyDataError as e:
+            print(f"Error: {e}")
+            print("The CSV file is empty.")
+            # return False
 
     def plot(self):
         for bed in self.beds:
@@ -86,6 +102,7 @@ class BEDHandler:
             b.saveas(filename)
             self.bed_loader(filename)
 
+
 class MatplotlibCanvas(FigureCanvas):
     def __init__(self, parent=None, width=5, height=4, dpi=100):
         global fig
@@ -101,6 +118,7 @@ class MatplotlibCanvas(FigureCanvas):
         initial_ylim = (0, 10)
         self.ax.set_xlim(*initial_xlim)
         self.ax.set_ylim(*initial_ylim)
+
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -134,6 +152,12 @@ class MainWindow(QMainWindow):
         self.intersect_button = QPushButton("Intersect", self)
         self.intersect_button.clicked.connect(self.bed_handler.intersection)
         self.main_layout.addWidget(self.intersect_button)
+
+        # cat for debugging
+        exit_button = QPushButton('Exit', self)
+        exit_button.clicked.connect(self.close)
+        self.main_layout.addWidget(exit_button)
+        # end cat
 
         self.update_chromosome()
 
