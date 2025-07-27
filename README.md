@@ -1,21 +1,30 @@
 # TheTalosPrincible
 
 ## for developers
-## 27.7.2025 update by noadrow
-hey guys this is a new and refined version of the talos princible project 
-the flow\pipeline now is dependent on 2-4 files in the following way:
-uploading Background file to calculate satistical p-value - if BG was not given the Data file is going to be used as BG and viseversa
-uploading 1-2 target files - currently the support for venn diagram between the targets are for string data only (id\genes and stuff)
-uploading data file - this is were the magic happens ! the data file can contain a numerical values or strings and the pipeline would be chosen in accordance to that, note that if no data file given the program would try to use the BG file as data 
+### 27.7.2025 — Update by Noadrow
 
-the numerical calculation is written but it's shit so ignore it, for now only string values are supported 
+Hey everyone,
+This is a new and refined version of the Talos Principle Project.
 
-TODO:
-*option to save results. (also output overlap subset as text file for enrichments)
-*fix numerical calculation.
-*add support for text files and not just bed in target area 
-*anable creating targets by identifying motifs
+The flow/pipeline now depends on 2–4 files, as follows:
 
+    Background file (BG): Used to calculate statistical p-values. If no BG file is provided, the Data file will be used as the BG (and vice versa).
+
+    Target files (1–2): These define your regions of interest. Currently, Venn diagram support between targets works for string data only (IDs, gene names, etc.).
+
+    Data file: This is where the magic happens! The Data file can contain either numerical values or strings — the pipeline will adapt accordingly.
+    Note: If no Data file is given, the program will try to use the BG file as the Data source.
+
+👉 Note: The numerical calculation logic is written but still rough — so ignore it for now. Only string-based workflows are fully supported.
+### ✅ TODO
+
+    Add an option to save results (including exporting the overlapping subset as a text file for enrichment).
+
+    Fix and improve the numerical calculation pipeline.
+
+    Add support for plain text files as targets, not just BED format.
+
+    Enable creating targets by identifying motifs.
 
 ## (Possible) Steps for Install
 1. clone and install project
