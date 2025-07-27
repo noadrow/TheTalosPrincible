@@ -1,35 +1,26 @@
 # TheTalosPrincible
-### https://store.steampowered.com/app/257510/The_Talos_Principle/
 
 ## for developers
-### from 14.2.24 meeting
-The collaboration on this project is meant to create a more simple and intuitive tool for researchers.   
-The tools available today are mostly cli (command line) based and require many steps even for the simplest query.
+## 27.7.2025 update by noadrow
+hey guys this is a new and refined version of the talos princible project 
+the flow\pipeline now is dependent on 2-4 files in the following way:
+uploading Background file to calculate satistical p-value - if BG was not given the Data file is going to be used as BG and viseversa
+uploading 1-2 target files - currently the support for venn diagram between the targets are for string data only (id\genes and stuff)
+uploading data file - this is were the magic happens ! the data file can contain a numerical values or strings and the pipeline would be chosen in accordance to that, note that if no data file given the program would try to use the BG file as data 
 
-Currently, user's action pipline is:
-uploading a file --> running macs2 --> running bedtools --> converting file from .bed to .bam --> using macs2 for peak calling --> presenting the results graphically
+the numerical calculation is written but it's shit so ignore it, for now only string values are supported 
 
-So the most urgent goals would be:
- - Squashing the pipeline into a single button
- - Allowing the user to choose the parameters for the process in a more efficient and intuitive way
-In the future we hope to add feature like:
- - Gene listing (with similar "squashed" action pipline)
- - "Automated" Peak Calling Graphs
-
-Also since we're hoping to work using git&hub, we'll try to incorporate the use of pull request and issue closing in commit messages.
-Individual work should be done on the appropriate branches.
-The 'for_beginners' branch can be used for new incomers (e.g can be used to update documentation and trying out git features etc.) 
+TODO:
+*option to save results. (also output overlap subset as text file for enrichments)
+*fix numerical calculation.
+*add support for text files and not just bed in target area 
+*anable creating targets by identifying motifs
 
 
 ## (Possible) Steps for Install
 1. clone and install project
     (recommended for pycharm users) [create venv](https://www.jetbrains.com/help/pycharm/creating-virtual-environment.html#env-requirements)
-2. install requirements (recommended using [requirements.txt](https://www.freecodecamp.org/news/python-requirementstxt-explained/), see more info in the file) 
-    check by running `bedtools intersect -a hg19_mir688.bed -b hg19_mir688.bed` (TODO didn't work from cli)
-    check by running Round1/round2.py
-3. ...
-
-
+2. install requirements (recommended using [requirements.txt](https://www.freecodecamp.org/news/python-requirementstxt-explained/)
 
 ### using requirements.txt file, for those using command line:
 
