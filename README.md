@@ -5,7 +5,8 @@
 <img width="615" height="621" alt="bigwig" src="https://github.com/user-attachments/assets/c92d36c6-e672-42d4-9ded-96013181eb09" />
 <img width="615" height="621" alt="Screenshot from 2025-08-01 07-18-21" src="https://github.com/user-attachments/assets/76e1d1da-2c7d-45b0-9616-9b70b0441aee" />
 <img width="615" height="621" alt="Screenshot from 2025-08-01 09-36-47" src="https://github.com/user-attachments/assets/1037c594-696e-481f-abd3-c9bb84081c2a" />
-<img width="615" height="621" alt="Screenshot from 2025-08-01 09-36-47" src="https://github.com/user-attachments/assets/31caf378-6c68-4df3-95e6-94298562945b" />
+<img width="1445" height="1151" alt="Screenshot from 2025-08-01 09-44-17" src="https://github.com/user-attachments/assets/c340254e-0379-4265-99fd-afb1bbea4868" />
+
 
 ## for developers
 ### 27.7.2025 — Update by Noadrow
