@@ -1,35 +1,43 @@
 # TheTalosPrincible
-### https://store.steampowered.com/app/257510/The_Talos_Principle/
+
+### showreel
+<img width="615" height="621" alt="Screenshot from 2025-08-01 07-16-20" src="https://github.com/user-attachments/assets/5f35180c-7d66-4069-8f70-e0bb75000664" />
+<img width="615" height="621" alt="bigwig" src="https://github.com/user-attachments/assets/c92d36c6-e672-42d4-9ded-96013181eb09" />
+<img width="615" height="621" alt="Screenshot from 2025-08-01 07-18-21" src="https://github.com/user-attachments/assets/76e1d1da-2c7d-45b0-9616-9b70b0441aee" />
+<img width="615" height="621" alt="Screenshot from 2025-08-01 09-36-47" src="https://github.com/user-attachments/assets/1037c594-696e-481f-abd3-c9bb84081c2a" />
+<img width="1445" height="1151" alt="Screenshot from 2025-08-01 09-44-17" src="https://github.com/user-attachments/assets/c340254e-0379-4265-99fd-afb1bbea4868" />
+
 
 ## for developers
-### from 14.2.24 meeting
-The collaboration on this project is meant to create a more simple and intuitive tool for researchers.   
-The tools available today are mostly cli (command line) based and require many steps even for the simplest query.
+### 27.7.2025 — Update by Noadrow
 
-Currently, user's action pipline is:
-uploading a file --> running macs2 --> running bedtools --> converting file from .bed to .bam --> using macs2 for peak calling --> presenting the results graphically
+Hey everyone,
+This is a new and refined version of the Talos Principle Project.
 
-So the most urgent goals would be:
- - Squashing the pipeline into a single button
- - Allowing the user to choose the parameters for the process in a more efficient and intuitive way
-In the future we hope to add feature like:
- - Gene listing (with similar "squashed" action pipline)
- - "Automated" Peak Calling Graphs
+The flow/pipeline now depends on 2–4 files, as follows:
 
-Also since we're hoping to work using git&hub, we'll try to incorporate the use of pull request and issue closing in commit messages.
-Individual work should be done on the appropriate branches.
-The 'for_beginners' branch can be used for new incomers (e.g can be used to update documentation and trying out git features etc.) 
+    Background file (BG): Used to calculate statistical p-values. If no BG file is provided, the Data file will be used as the BG (and vice versa).
 
+    Target files (1–2): These define your regions of interest. Currently, Venn diagram support between targets works for string data only (IDs, gene names, etc.).
+
+    Data file: This is where the magic happens! The Data file can contain either numerical values or strings — the pipeline will adapt accordingly.
+    Note: If no Data file is given, the program will try to use the BG file as the Data source.
+
+👉 Note: The numerical calculation logic is written but still rough — so ignore it for now. Only string-based workflows are fully supported.
+### ✅ TODO
+
+    Add an option to save results (including exporting the overlapping subset as a text file for enrichment).
+
+    Fix and improve the numerical calculation pipeline.
+
+    Add support for plain text files as targets, not just BED format.
+
+    Enable creating targets by identifying motifs.
 
 ## (Possible) Steps for Install
 1. clone and install project
     (recommended for pycharm users) [create venv](https://www.jetbrains.com/help/pycharm/creating-virtual-environment.html#env-requirements)
-2. install requirements (recommended using [requirements.txt](https://www.freecodecamp.org/news/python-requirementstxt-explained/), see more info in the file) 
-    check by running `bedtools intersect -a hg19_mir688.bed -b hg19_mir688.bed` (TODO didn't work from cli)
-    check by running Round1/round2.py
-3. ...
-
-
+2. install requirements (recommended using [requirements.txt](https://www.freecodecamp.org/news/python-requirementstxt-explained/)
 
 ### using requirements.txt file, for those using command line:
 
@@ -38,4 +46,3 @@ The 'for_beginners' branch can be used for new incomers (e.g can be used to upda
 
 #### update requirements.txt using command in cli
 `pip freeze > requirements.txt`
-
