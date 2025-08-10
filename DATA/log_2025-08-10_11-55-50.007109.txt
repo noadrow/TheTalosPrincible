@@ -1,0 +1,5 @@
+input file: /home/botnet/Documents/TheTalosPrincible/TheTalosPrincible/DATA/common.bed
+ output file: /home/botnet/Documents/TheTalosPrincible/TheTalosPrincible/DATA/common.bed
+ reference file: /home/botnet/Documents/TheTalosPrincible/TheTalosPrincible/DATA/450k_CpGs.hg19.bed
+ length: 2
+ total time: 30.58253788948059

@@ -1,5 +1,6 @@
 ### packages to be installed for the project, more info in README.md ###
 
+matplotlib_venn==1.16.0
 
 contourpy==1.2.0
 cycler==0.12.1
