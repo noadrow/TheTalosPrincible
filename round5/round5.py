@@ -94,14 +94,13 @@ class TalosPrincipleApp(tk.Tk):
         if self.target_files:
             for i,target_file in zip(range(len(self.target_files)),self.target_files):
                 if target_file:
-                    try:
-                        filepath = self.sort(target_file)
-                    except:
+                    if target_file.lower().endswith(".txt"):
                         from Id_to_bed import id_to_bed
                         filepath_0 = id_to_bed(target_file)
                         filepath = self.sort(filepath_0)
+                    else:
+                        filepath = self.sort(target_file)
 
-                    self.file_path.insert(i, filepath)
                     self.target_files[i] = filepath
                     print(f"Loaded Target: {target_file}")
                     self.make_track_files()
@@ -179,9 +178,12 @@ class TalosPrincipleApp(tk.Tk):
             return
         elif not self.background_file:
             bg_tool = pybedtools.BedTool(self.data_file)
+
             data_tool = pybedtools.BedTool(self.data_file)
         elif not self.data_file:
             bg_tool = pybedtools.BedTool(self.background_file)
+
+        elif not self.data_file:
             data_tool = pybedtools.BedTool(self.background_file)
         else:
             bg_tool = pybedtools.BedTool(self.background_file)
