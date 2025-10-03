@@ -27,8 +27,11 @@ class TalosPrincipleApp(tk.Tk):
         # Files
         self.background_file = ""
         self.target_files = [None,None]
+        self.target_names = [None,None]
         self.data_file = ""
         self.file_path = []
+
+        self.res = [None,None,None]
 
         # Input string for region view
         self.input_str = "5:135444104-135444504"
@@ -64,12 +67,15 @@ class TalosPrincipleApp(tk.Tk):
         self.clear_button = tk.Button(button_frame, text="Clear", command=self.clear_ini)
         self.clear_button.pack(side=tk.LEFT, padx=5)
 
+        self.save = tk.Button(button_frame, text="Save", command=self.save)
+        self.save.pack(side=tk.LEFT, padx=5)
+
         # Canvas for image
         self.canvas = tk.Canvas(self, width=800, height=400)
         self.canvas.pack(pady=10)
 
         # Result text box
-        self.result_text = tk.Text(self, height=8, width=150)
+        self.result_text = tk.Text(self, height=80, width=150)
         self.result_text.pack(pady=10)
 
         self.clear_ini()
@@ -91,6 +97,9 @@ class TalosPrincipleApp(tk.Tk):
 
         self.target_files[0] = filedialog.askopenfilename(title="Select Target BED File 1")
         self.target_files[1] = filedialog.askopenfilename(title="Select Target BED File 2")
+        self.target_names[0] = str(self.target_files[0]).split("/")[-1].split(".")[0]
+        self.target_names[1] = str(self.target_files[1]).split("/")[-1].split(".")[0]
+
         if self.target_files:
             for i,target_file in zip(range(len(self.target_files)),self.target_files):
                 if target_file:
@@ -178,12 +187,9 @@ class TalosPrincipleApp(tk.Tk):
             return
         elif not self.background_file:
             bg_tool = pybedtools.BedTool(self.data_file)
-
             data_tool = pybedtools.BedTool(self.data_file)
         elif not self.data_file:
             bg_tool = pybedtools.BedTool(self.background_file)
-
-        elif not self.data_file:
             data_tool = pybedtools.BedTool(self.background_file)
         else:
             bg_tool = pybedtools.BedTool(self.background_file)
@@ -224,8 +230,9 @@ class TalosPrincipleApp(tk.Tk):
                 except:
                     print("something wrong with target file 2")
 
-            venn2([set(target_values), set(target_values_2)], set_labels=('Target 1', 'Target 2'))
-            plt.title('Venn Diagram of Overlap Between Target 1 and Target 2')
+            Target1, Target2 = self.target_names[0], self.target_names[1]
+            venn2([set(target_values), set(target_values_2)], set_labels=(Target1, Target2))
+            plt.title(f'Venn Diagram of Overlap Between {Target1} and {Target2} ')
             venn_path = os.path.join(self.temp_folder, "venn_diagram.png")
             plt.savefig(venn_path)
             plt.close()
@@ -251,10 +258,19 @@ class TalosPrincipleApp(tk.Tk):
             p_deplete = (sum(o <= target_res for o in overlaps) + 1) / (N + 1)
             p_two_sided = 2 * min(p_enrich, p_deplete)
 
-            result = f'Observed overlap: {target_res}\n'
-            result += f'Enrichment p-value: {p_enrich:.4f}\n'
-            result += f'Depletion p-value: {p_deplete:.4f}\n'
-            result += f'Two-sided p-value: {p_two_sided:.4f}\n'
+            result = (
+                f"  In this analysis, we compared the overlap between {Target1} (target 1) and {Target2} (target 2) against random expectation. "
+                f"  The algorithm counts the observed overlap, then randomly samples subsets of the same size as target 1 and 2."
+                f"  we fill the sequences from the background file and we randomly select for each subset 1000 times to build a distribution. From this, we compute:\n"
+                f"- Enrichment p-value probability that the observed value is higher then expected \n"
+                f"- Depletion p-value probability that the observed value is lower then expected \n"
+                f"- Two-sided p-value in case you do not knew ahead the expected direction use this value \n\n"
+                f"Results:\n"
+                f"Observed overlap = {target_res}\n"
+                f"Enrichment p-value = {p_enrich:.4f}\n"
+                f"Depletion p-value = {p_deplete:.4f}\n"
+                f"Two-sided p-value = {p_two_sided:.4f}"
+            )
 
             self.result_text.delete(1.0, tk.END)
             self.result_text.insert(tk.END, result)
@@ -266,46 +282,44 @@ class TalosPrincipleApp(tk.Tk):
             plt.xlabel('Overlap Count')
             plt.ylabel('Frequency')
             plt.legend()
+            dis_path = os.path.join(self.temp_folder, "distribution.png")
+            plt.savefig(dis_path)
             plt.show()
+            self.res = [dis_path,venn_path,result]
 
+    def make_unique_dir(self, base_dir, name="result"):
+        """
+        Create a new directory under base_dir with name,
+        adding a number suffix if it already exists.
+        """
+        dir_path = os.path.join(base_dir, name)
+        counter = 1
+        while os.path.exists(dir_path):
+            dir_path = os.path.join(base_dir, f"{name}_{counter}")
+            counter += 1
+        os.makedirs(dir_path)
+        return dir_path
 
-        if type(bg_values[0])==float:
-            min_len = min(len(bg_values), len(target_values))
-            bg_values = bg_values[:min_len]
-            target_values = target_values[:min_len]
+    def save(self):
+        venn_path = self.res[0]
+        hist_path = self.res[1]
+        results_text = self.res[2]
 
-            stat, p = wilcoxon(np.array(target_values) - np.array(bg_values))
-
-            bg_mean = np.mean(bg_values)
-            bg_std = np.std(bg_values)
-            target_mean = np.mean(target_values)
-            target_std = np.std(target_values)
-
-            plt.figure(figsize=(4, 4))
-            venn2(subsets=(len(bg_values), len(target_values), min_len), set_labels=('Background', 'Target'))
-            venn_path = os.path.join(self.temp_folder, "venn_diagram.png")
-            plt.savefig(venn_path)
-            plt.close()
-
-            self.show_image(venn_path)
-
-            if p < 0.05:
-                result = (
-                    f"The comparative analysis between the background and target regions "
-                    f"revealed an average value of {bg_mean:.2f} (± SD of {bg_std:.2f}) in the background, "
-                    f"compared to an average of {target_mean:.2f} (± SD of {target_std:.2f}) in the target regions. "
-                    f"Using the Wilcoxon signed-rank test, the results showed a statistically significant "
-                    f"difference (p = {p:.4f}), indicating that the target regions differ meaningfully "
-                    f"from the background."
-                )
-            else:
-                result = (
-                    f"The comparative analysis between the background and target regions "
-                    f"revealed an average value of {bg_mean:.2f} (± SD of {bg_std:.2f}) in the background, "
-                    f"compared to an average of {target_mean:.2f} (± SD of {target_std:.2f}) in the target regions. "
-                    f"The Wilcoxon signed-rank test showed no statistically significant difference "
-                    f"(p = {p:.4f}), suggesting that the target regions are similar to the background."
-                )
+        # Ask user to choose a directory
+        save_dir = filedialog.askdirectory(title="Choose a directory to save package")
+        # add unique naming in the future
+        save_dir = self.make_unique_dir(save_dir,"result")
+        if save_dir:
+            if results_text:
+                with open(f"{save_dir}/res.txt", "w") as f:
+                    f.write(results_text)
+            data = None
+            if venn_path:
+                with open(venn_path, "rb") as f_in, open(f"{save_dir}/venn_res.png", "wb") as f_out:
+                    f_out.write(f_in.read())
+            if hist_path:
+                with open(hist_path, "rb") as f_in, open(f"{save_dir}/hist_res.png", "wb") as f_out:
+                    f_out.write(f_in.read())
 
 if __name__ == "__main__":
     app = TalosPrincipleApp()
