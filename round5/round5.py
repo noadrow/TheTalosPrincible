@@ -284,8 +284,8 @@ class TalosPrincipleApp(tk.Tk):
             plt.legend()
             dis_path = os.path.join(self.temp_folder, "distribution.png")
             plt.savefig(dis_path)
-            plt.show()
             self.res = [dis_path,venn_path,result]
+            plt.show()
 
     def make_unique_dir(self, base_dir, name="result"):
         """
@@ -313,13 +313,11 @@ class TalosPrincipleApp(tk.Tk):
             if results_text:
                 with open(f"{save_dir}/res.txt", "w") as f:
                     f.write(results_text)
-            data = None
             if venn_path:
-                with open(venn_path, "rb") as f_in, open(f"{save_dir}/venn_res.png", "wb") as f_out:
-                    f_out.write(f_in.read())
+                shutil.copy(venn_path, os.path.join(save_dir, "venn_res.png"))
             if hist_path:
-                with open(hist_path, "rb") as f_in, open(f"{save_dir}/hist_res.png", "wb") as f_out:
-                    f_out.write(f_in.read())
+                shutil.copy(hist_path, os.path.join(save_dir, "hist_res.png"))
+
 
 if __name__ == "__main__":
     app = TalosPrincipleApp()
