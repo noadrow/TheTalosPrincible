@@ -4,14 +4,30 @@ import cv2
 from PIL import Image, ImageTk
 import subprocess
 import pybedtools
-import numpy as np
-from scipy.stats import wilcoxon
 import matplotlib.pyplot as plt
 from matplotlib_venn import venn2
 import tkinter as tk
 from tkinter import filedialog
-import random
-import itertools
+import threading
+from tkinter import ttk
+import numpy as np
+
+
+class LoadingScreen(tk.Toplevel):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.title("Loading")
+        self.geometry("250x100+700+400")
+        self.overrideredirect(True)  # No window border
+
+        self.configure(bg="white")
+
+        label = tk.Label(self, text="Analyzing...", font=("Arial", 14), bg="white")
+        label.pack(pady=10)
+
+        self.progress = ttk.Progressbar(self, mode='indeterminate')
+        self.progress.pack(padx=20, pady=10, fill='x')
+        self.progress.start(10)
 
 class TalosPrincipleApp(tk.Tk):
     def __init__(self):
@@ -36,11 +52,18 @@ class TalosPrincipleApp(tk.Tk):
         # Input string for region view
         self.input_str = "5:135444104-135444504"
 
+        # Create a horizontal frame to hold both the text box and the button
+        input_frame = tk.Frame(self)
+        input_frame.pack(pady=10)
 
-        # Text box
-        self.text_box = tk.Entry(self)
-        self.text_box.pack(pady=10)
-        self.text_box.insert(0,self.input_str)
+        # Text box inside the same frame
+        self.text_box = tk.Entry(input_frame)
+        self.text_box.pack(side=tk.LEFT, padx=5)
+        self.text_box.insert(0, self.input_str)
+
+        # Button inside the same frame, right next to the text box
+        self.run_button = tk.Button(input_frame, text="Go", command=self.run_function)
+        self.run_button.pack(side=tk.LEFT, padx=5)
 
         # Buttons frame
         button_frame = tk.Frame(self)
@@ -57,12 +80,9 @@ class TalosPrincipleApp(tk.Tk):
         self.load_data_button.pack(side=tk.LEFT, padx=5)
 
         # Analyze button
-        self.analyze_button = tk.Button(button_frame, text="Analyze", command=self.analyze)
+        self.analyze_button = tk.Button(button_frame, text="Analyze", command=self.start_analysis)
         self.analyze_button.pack(side=tk.LEFT, padx=5)
 
-        # Other buttons
-        self.run_button = tk.Button(button_frame, text="Go", command=self.run_function)
-        self.run_button.pack(side=tk.LEFT, padx=5)
 
         self.clear_button = tk.Button(button_frame, text="Clear", command=self.clear_ini)
         self.clear_button.pack(side=tk.LEFT, padx=5)
@@ -70,13 +90,28 @@ class TalosPrincipleApp(tk.Tk):
         self.save = tk.Button(button_frame, text="Save", command=self.save)
         self.save.pack(side=tk.LEFT, padx=5)
 
-        # Canvas for image
-        self.canvas = tk.Canvas(self, width=800, height=400)
-        self.canvas.pack(pady=10)
+        self.fancy = tk.BooleanVar(value=False)
+
+        # Simple checkbutton
+        self.toggle = tk.Checkbutton(
+            self,
+            text="Enable base-pair wise analysis (much longer analysis time)",
+            variable=self.fancy,
+        )
+        self.toggle.pack(padx=20, pady=20)
+
+        # When creating your canvas:
+        self.canvas = tk.Canvas(self)
+        self.v_scroll = tk.Scrollbar(self, orient=tk.VERTICAL, command=self.canvas.yview)
+        self.canvas.configure(yscrollcommand=self.v_scroll.set)
+
+        self.v_scroll.pack(side=tk.RIGHT, fill=tk.Y)
+        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 
         # Result text box
         self.result_text = tk.Text(self, height=80, width=150)
         self.result_text.pack(pady=10)
+
 
         self.clear_ini()
         self.mainloop()
@@ -139,6 +174,7 @@ class TalosPrincipleApp(tk.Tk):
         self.file_path = []
         self.make_track_files()
         self.pyGenomeTracks()
+        self.result_text.delete(1.0, tk.END)
 
     def make_track_files(self):
         if self.file_path:
@@ -155,36 +191,64 @@ class TalosPrincipleApp(tk.Tk):
                 "test.ini", "--region",
                 self.input_str, "-o", "bigwig.png"
             ])
-            self.show_image("bigwig.png")
+            self.show_images(["bigwig.png"])
         else:
-            self.show_image("empty.png")
+            self.show_images(["empty.png"])
 
-    def show_image(self, img_path):
-        try:
-            image = cv2.imread(img_path)
-            if image is None:
-                print(f"Image not found: {img_path}")
-                return
-            height, width, _ = image.shape
-            image = cv2.resize(image, (width, height))
-            image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-            pil_image = Image.fromarray(image)
-            image_tk = ImageTk.PhotoImage(pil_image)
-            self.geometry(f"{width}x{height + 500}")
-            self.canvas.config(width=width, height=height)
-            self.canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-            self.canvas.pack(fill=tk.BOTH, expand=True)
-            self.canvas.image = image_tk
-        except:
-            print("Failed to show image")
+    def show_images(self, img_paths):
+        self.canvas.delete("all")  # Clear previous images
+
+        y_offset = 0  # Starting Y position
+        self.canvas_images = []  # Keep image references
+
+        total_height = 0
+        max_width = 0
+
+        for img_path in img_paths:
+            try:
+                image = cv2.imread(img_path)
+                if image is None:
+                    print(f"Image not found: {img_path}")
+                    continue
+
+                height, width, _ = image.shape
+                image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+                pil_image = Image.fromarray(image)
+                image_tk = ImageTk.PhotoImage(pil_image)
+
+                self.canvas.create_image(0, y_offset, anchor=tk.NW, image=image_tk)
+                self.canvas_images.append(image_tk)  # Prevent garbage collection
+
+                y_offset += height
+                total_height += height
+                max_width = max(max_width, width)
+
+            except Exception as e:
+                print(f"Failed to load image {img_path}: {e}")
+
+        # Resize canvas to fit all images
+        self.canvas.config(scrollregion=(0, 0, max_width, total_height))
+        self.canvas.config(width=max_width, height=min(total_height, 800))  # or whatever height you want visible
+
+    def start_analysis(self):
+        # Show the loading screen
+        self.loading = LoadingScreen(self)
+
+        # Run the analysis in a separate thread to avoid UI freeze
+        threading.Thread(target=self.analyze).start()
 
     def analyze(self):
+
         if not self.target_files:
             print("warning! missing target file")
+            self.after(0, self.analysis_done)
             return
         elif not self.background_file and not self.data_file:
             print("warning! at least upload BG or Data file!")
+            self.after(0, self.analysis_done)
             return
+
+        # fill background with data or data with background if missing
         elif not self.background_file:
             bg_tool = pybedtools.BedTool(self.data_file)
             data_tool = pybedtools.BedTool(self.data_file)
@@ -195,11 +259,14 @@ class TalosPrincipleApp(tk.Tk):
             bg_tool = pybedtools.BedTool(self.background_file)
             data_tool = pybedtools.BedTool(self.data_file)
 
-        target_tool = pybedtools.BedTool(self.target_files[0])
+        target_tool_0 = pybedtools.BedTool(self.target_files[0])
 
+        # use data as values for each track
         bg_data = data_tool.intersect(bg_tool, wa=True)
-        target_data = data_tool.intersect(target_tool, wa=True)
+        target_data_0 = data_tool.intersect(target_tool_0, wa=True)
 
+
+        # parse bed into the values only
         bg_values = []
         for f in bg_data:
             try:
@@ -207,52 +274,51 @@ class TalosPrincipleApp(tk.Tk):
             except:
                 bg_values.append(str(f[3]))
 
-        target_values = []
-        for f in target_data:
+        target_values_0 = []
+        for f in target_data_0:
             try:
-                target_values.append(float(f[3]))
+                target_values_0.append(float(f[3]))
             except:
-                target_values.append(str(f[3]))
+                target_values_0.append(str(f[3]))
 
-        if not bg_values or not target_values:
+
+        if not bg_values or not target_values_0:
             self.result_text.insert(tk.END, "Not enough data for analysis.\n")
+            self.after(0, self.analysis_done)
             return
 
-        if type(bg_values[0])== str and len(self.target_files)==2:
+        if len(self.target_files)==2:
 
-            target_tool_2 = pybedtools.BedTool(self.target_files[1])
-            target_data_2 = data_tool.intersect(target_tool_2, wa=True)
+            target_tool_1 = pybedtools.BedTool(self.target_files[1])
+            target_data_1 = data_tool.intersect(target_tool_1, wa=True)
+            intersect = target_data_0.intersect(target_data_1, u=True)
 
-            target_values_2 = []
-            for f in target_data_2:
+            target_values_1 = []
+            for f in target_data_1:
                 try:
-                    target_values_2.append(str(f[3]))
+                    target_values_1.append(str(f[3]))
                 except:
-                    print("something wrong with target file 2")
+                    target_values_1.append(float(f[3]))
 
             Target1, Target2 = self.target_names[0], self.target_names[1]
-            venn2([set(target_values), set(target_values_2)], set_labels=(Target1, Target2))
+
+            a,b,ab = len(target_data_0),len(target_data_1),len(intersect)
+
+            venn2(subsets=(a - ab, b - ab, ab), set_labels=(Target1, Target2))
             plt.title(f'Venn Diagram of Overlap Between {Target1} and {Target2} ')
             venn_path = os.path.join(self.temp_folder, "venn_diagram.png")
             plt.savefig(venn_path)
             plt.close()
-            self.show_image(venn_path)
 
-            # Show the plot
-            plt.show()
+            if(self.fancy.get()):
+                overlaps = self.analyze_fancy(target_data_1, target_data_0)
+            else:
+                N = len(bg_tool)
+                A = len(target_values_0)
+                B = len(target_values_1)
+                overlaps = np.random.hypergeometric(ngood=A, nbad=N - A, nsample=B, size=1000)
 
-            N = 1000
-            size1 = len(target_values)
-            size2 = len(target_values_2)
-
-            overlaps = []
-            for _ in range(N):
-                subset1 = set(random.sample(bg_values, size1))
-                subset2 = set(random.sample(bg_values, size2))
-                overlap = len(subset1 & subset2)
-                overlaps.append(overlap)
-
-            target_res = len(set(target_values) & set(target_values_2))
+            target_res = len(target_data_0.intersect(target_data_1, wa=True, wb=True))
 
             p_enrich = (sum(o >= target_res for o in overlaps) + 1) / (N + 1)
             p_deplete = (sum(o <= target_res for o in overlaps) + 1) / (N + 1)
@@ -272,9 +338,6 @@ class TalosPrincipleApp(tk.Tk):
                 f"Two-sided p-value = {p_two_sided:.4f}"
             )
 
-            self.result_text.delete(1.0, tk.END)
-            self.result_text.insert(tk.END, result)
-
             plt.hist(overlaps, bins=30, color='skyblue', edgecolor='black')
             plt.axvline(target_res, color='red', linestyle='dashed', linewidth=2,
                         label=f'Observed Overlap: {target_res}')
@@ -284,8 +347,64 @@ class TalosPrincipleApp(tk.Tk):
             plt.legend()
             dis_path = os.path.join(self.temp_folder, "distribution.png")
             plt.savefig(dis_path)
-            self.res = [dis_path,venn_path,result]
-            plt.show()
+            plt.close()
+
+            self.show_images([venn_path, dis_path])
+
+            self.result_text.delete(1.0, tk.END)
+            self.result_text.insert(tk.END, result)
+            self.res = [dis_path, venn_path, result]
+
+            self.after(0, self.analysis_done)
+
+
+    def analyze_fancy(self,target_data_1,target_data_0):
+
+            N = 1000
+            size1 = len(target_data_0)
+            size2 = len(target_data_1)
+
+            overlaps = []
+            for _ in range(N):
+                subset1 = target_data_0.shuffle(genome="hg18",incl=self.background_file)
+                subset2 = target_data_1.shuffle(genome="hg18",incl=self.background_file)
+                overlap = subset1.intersect(subset2, wa=True, wb=True).total_coverage()
+                overlaps.append(overlap)
+
+            return overlaps
+
+            """
+                        if (type(bg_values[0]) == float or type(bg_values[0]) == int) and len(self.target_files) == 2:
+                N = 1000
+                size1 = len(target_values_0)
+                size2 = len(target_values_1)
+
+                means = []
+                for _ in range(N):
+                    subset1 = set(random.sample(bg_values, size1))
+                    subset2 = set(random.sample(bg_values, size2))
+                    mean = sum(subset1 & subset2)/len(subset1 & subset2)
+                    means.append(mean)
+
+                target_res = sum(set(target_values_0) & set(target_values_1))/len(set(target_values_0) & set(target_values_1))
+
+                result += (
+                    f"numerical analysis Results:\n"
+                    f"Observed mean = {target_res}\n"
+                    f"Enrichment p-value = {p_enrich:.4f}\n"
+                    f"Depletion p-value = {p_deplete:.4f}\n"
+                    f"Two-sided p-value = {p_two_sided:.4f}"
+                )
+
+                p_enrich = (sum(o >= target_res for o in means) + 1) / (N + 1)
+                p_deplete = (sum(o <= target_res for o in means) + 1) / (N + 1)
+                p_two_sided = 2 * min(p_enrich, p_deplete)
+
+            
+            """
+
+    def analysis_done(self):
+        self.loading.destroy()
 
     def make_unique_dir(self, base_dir, name="result"):
         """
@@ -320,5 +439,5 @@ class TalosPrincipleApp(tk.Tk):
 
 
 if __name__ == "__main__":
-    app = TalosPrincipleApp()
 
+    app = TalosPrincipleApp()
