@@ -28,8 +28,6 @@ The flow/pipeline now depends on 2–4 files, as follows:
 
     Add an option to save results (including exporting the overlapping subset as a text file for enrichment).
 
-    Fix and improve the numerical calculation pipeline.
-
     Add support for plain text files as targets, not just BED format.
 
     Enable creating targets by identifying motifs.
