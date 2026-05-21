@@ -1,3 +1,6 @@
+
+
+
 import os
 import shutil
 import cv2
@@ -11,7 +14,7 @@ from tkinter import filedialog
 import threading
 from tkinter import ttk
 import numpy as np
-
+from scipy.stats import hypergeom
 
 class LoadingScreen(tk.Toplevel):
     def __init__(self, parent):
@@ -127,6 +130,7 @@ class TalosPrincipleApp(tk.Tk):
             self.file_path.insert(0,filepath)
             print(f"Loaded Background: {self.background_file}")
             self.make_track_files()
+            self.background_file = filepath
 
     def load_target(self):
 
@@ -309,38 +313,52 @@ class TalosPrincipleApp(tk.Tk):
             venn_path = os.path.join(self.temp_folder, "venn_diagram.png")
             plt.savefig(venn_path)
             plt.close()
+            sim_rep = 1000
+
+
 
             if(self.fancy.get()):
-                overlaps = self.analyze_fancy(target_data_1, target_data_0)
+                text = "Those results are calculated bp counting wise"
+                N_bg = bg_tool.total_coverage()
+                A = target_data_0.total_coverage()
+                B = target_data_1.total_coverage()
+                overlap = target_data_0.intersect(target_data_1, wa=True, wb=True).total_coverage()
+                p_enrich = hypergeom.sf(overlap - 1, N_bg, A, B)
+                p_deplete = hypergeom.cdf(overlap, N_bg, A, B)
+                p_two_sided = min(1.0, 2 * min(p_enrich, p_deplete))
+
             else:
-                N = len(bg_tool)
+                text = "Those results are calculated interval number wise"
+                N_bg = len(bg_tool)
                 A = len(target_values_0)
                 B = len(target_values_1)
-                overlaps = np.random.hypergeometric(ngood=A, nbad=N - A, nsample=B, size=1000)
-
-            target_res = len(target_data_0.intersect(target_data_1, wa=True, wb=True))
-
-            p_enrich = (sum(o >= target_res for o in overlaps) + 1) / (N + 1)
-            p_deplete = (sum(o <= target_res for o in overlaps) + 1) / (N + 1)
-            p_two_sided = 2 * min(p_enrich, p_deplete)
+                overlap = len(target_data_0.intersect(target_data_1, wa=True, wb=True))
+                dist = hypergeom(M=N_bg, n=A, N=B)
+                p_enrich = 1 - dist.cdf(overlap - 1)
+                p_deplete = dist.cdf(overlap)
+                p_two_sided = 2 * min(p_enrich, p_deplete)
 
             result = (
                 f"  In this analysis, we compared the overlap between {Target1} (target 1) and {Target2} (target 2) against random expectation. "
-                f"  The algorithm counts the observed overlap, then randomly samples subsets of the same size as target 1 and 2."
-                f"  we fill the sequences from the background file and we randomly select for each subset 1000 times to build a distribution. From this, we compute:\n"
+                f"  The algorithm counts the observed overlap, then compare it to a hypergeometric distribution"
+                f"  {text}\n"
                 f"- Enrichment p-value probability that the observed value is higher then expected \n"
                 f"- Depletion p-value probability that the observed value is lower then expected \n"
                 f"- Two-sided p-value in case you do not knew ahead the expected direction use this value \n\n"
                 f"Results:\n"
-                f"Observed overlap = {target_res}\n"
+                f"Observed overlap = {overlap}\n"
                 f"Enrichment p-value = {p_enrich:.4f}\n"
                 f"Depletion p-value = {p_deplete:.4f}\n"
                 f"Two-sided p-value = {p_two_sided:.4f}"
             )
 
-            plt.hist(overlaps, bins=30, color='skyblue', edgecolor='black')
-            plt.axvline(target_res, color='red', linestyle='dashed', linewidth=2,
-                        label=f'Observed Overlap: {target_res}')
+            rv = hypergeom(M=N_bg, n=A, N=B)
+            x = np.arange(max(0, A+ B - N_bg), min(A, B) + 1)
+            pmf = rv.pmf(x)
+
+            plt.plot(x, pmf, color='black', lw=1.5, label='Expected overlap distribution')
+            plt.axvline(overlap, color='red', linestyle='dashed', linewidth=2,
+                        label=f'Observed Overlap: {overlap}')
             plt.title('Overlap Null Distribution\nRandom BG Sets')
             plt.xlabel('Overlap Count')
             plt.ylabel('Frequency')
